@@ -24,7 +24,7 @@ spec:
       matchActions:
       - action: Sigkill   # Let the kernel kill it instantly before it even opens
 #------------------------------------------------------------------------------------
-
+#tetragon’s eBPF-powered engine to block unauthorized binaries from executing inside the payment pod in real-time
 
 #Below the steps to install tetragon given
 
