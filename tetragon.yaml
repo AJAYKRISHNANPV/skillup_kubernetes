@@ -1,0 +1,46 @@
+apiVersion: cilium.io/v1alpha1
+kind: TracingPolicy
+metadata:
+ name: secure-payment-pod
+spec:
+ podSelector:
+  matchLabels:
+   app: payment-api       # Target just my critical payment pod
+ kprobes:
+  - call: "sys_execve"      # Watch whenever a process tries to run a command
+    syscall: true
+    args:
+    - index: 0
+      type: "string"
+    selectors:
+    - matchArgs:
+      - index: 0
+        operator: "In"
+        values:       # The blocklist of tools an attacker would try to use
+        - "/bin/sh"
+        - "/bin/bash"
+        - "/usr/bin/curl"
+        - "/usr/bin/wget"
+      matchActions:
+      - action: Sigkill   # Let the kernel kill it instantly before it even opens
+#------------------------------------------------------------------------------------
+
+
+#Below the steps to install tetragon given
+
+#Deploy the Tetragon daemonset into your cluster using Helm: 
+# helm repo add cilium https://helm.cilium.io
+# helm repo update
+# helm install tetragon cilium/tetragon -n my-kube-system
+
+#Save the YAML above as payment-policy.yaml and apply it in cluster:
+# kubectl apply -f payment-policy.yaml
+
+#Try running a curl command inside your payment pod to simulate an unauthorized data exfiltration attempt:
+# kubectl exec -it deployment/payment-api -- curl https://example.com
+
+# Terminal output:
+# Killed
+
+#Stream tetragon's event export logs to see the underlying eBPF metadata and the resulting SIGKILL:
+# kubectl logs -n my-kube-system -l https://lnkd.in/dWiVWpqV -c export-stdout | grep SIGKILL
